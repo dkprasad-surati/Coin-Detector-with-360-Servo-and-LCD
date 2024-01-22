@@ -1,0 +1,114 @@
+#include <LiquidCrystal_I2C.h> // includes the LiquidCrystal Library
+#include <Servo.h>
+#include <Wire.h> 
+
+LiquidCrystal_I2C lcd(0x27,16,2);  // Creates an LC object. Parameters: (rs, enable, d4, d5, d6, d7)
+Servo servo1, servo2, servo3, servo4;   // DS04-NFC motors
+
+#define coinDetector 2
+
+#define button1 4
+#define button2 3
+
+
+
+int con = 0;
+boolean insert = false;
+volatile int pulse = 0;
+const int busyPin = 6;
+int buttonPressed;
+
+void setup() {
+  servo1.attach(12);
+  servo2.attach(11);
+  
+  pinMode(button1, INPUT_PULLUP);
+  pinMode(button2, INPUT_PULLUP);
+
+}
+void loop() {
+  // Print "Insert a coin!" on the LCD
+  lcd.init();
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Insert 2 coins!");
+  lcd.setCursor(0, 1);
+  lcd.print("Insert slowly!");
+  
+  // Wait until a coin is detected
+  while (true) {
+    if (digitalRead(coinDetector) == LOW) { // If a coin is detected, exit the from the while loop
+      if (con == 1) {
+        con = 0;
+        break;
+      }
+      else {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("1 coin inserted!");
+        con = 1;
+        delay(500);
+      }
+    }
+  }
+  
+  delay(10);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Select your item");
+  lcd.setCursor(0, 1);
+  lcd.print(" 1, or 2?");
+  
+  // Wait until a button is pressed
+  while (true) {
+    if (digitalRead(button1) == LOW) {
+      buttonPressed = 1;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("You selected 1!");
+      delay(2000);
+      break;
+    }
+    if (digitalRead(button2) == LOW) {
+      buttonPressed = 2;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("You selected 2!");
+      delay(2000);
+      break;
+    }
+    
+    
+  }
+  
+  // Print "Delivering..." 
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Delivering...");
+  switch (buttonPressed) {
+    case 1:
+      // Rotate the helical coil, discharge the selected item
+      servo1.writeMicroseconds(700); // rotate
+      delay(1290);
+      servo1.writeMicroseconds(1500);  // stop
+      delay(300);
+      break;
+      
+     case 2:
+      // Rotate the helix, push the selected item
+      servo2.writeMicroseconds(2000); // rotate
+      delay(950);
+      servo2.writeMicroseconds(1500);  // stop
+      delay(300);
+      break;
+
+      
+  }
+  
+  lcd.clear(); // Clears the display
+  lcd.setCursor(0, 0);
+  lcd.print("Item delivered!"); // Prints on the LCD
+  delay(2000);
+}
