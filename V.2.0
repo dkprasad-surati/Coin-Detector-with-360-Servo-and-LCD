@@ -1,0 +1,171 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>    //call library SoftwareSerial
+#include <DFPlayer_Mini_Mp3.h> //call library DFPlayer mini
+
+SoftwareSerial mp3(11, 10);
+const int coin = 2;
+boolean insert = false;
+volatile int pulse = 0;
+
+const int button1 = 3;
+const int button2 = 4;
+const int button3 = 5;
+
+const int motor1A = 6;
+const int motor1B = 7;
+const int motor2A = 8;
+const int motor2B = 9;
+const int motor3A = 12;
+const int motor3B = 13;
+
+const int harga1 = 2000;
+const int harga2 = 3000;
+const int harga3 = 2000;
+
+const int busyPin = 4;
+
+unsigned long int saldo=0;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  attachInterrupt(digitalPinToInterrupt(2), coinInterrupt, RISING);
+  pinMode(motor1A, OUTPUT);
+  pinMode(motor1B, OUTPUT);
+  pinMode(motor2A, OUTPUT);
+  pinMode(motor2B, OUTPUT);
+  pinMode(motor3A, OUTPUT);
+  pinMode(motor3B, OUTPUT);
+
+  pinMode(button1, INPUT);
+  pinMode(button2, INPUT);
+  pinMode(button3, INPUT);
+  digitalWrite(button1, HIGH);
+  digitalWrite(button2, HIGH);
+  digitalWrite(button3, HIGH);
+
+  mp3.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Vending Machine");
+  lcd.setCursor(0, 1);
+  lcd.print("");
+
+  mp3_set_serial (mp3); //set softwareSerial for DFPlayer
+  delay(10);
+
+  mp3_reset();  //soft-Reset module DFPlayer
+
+  delay(10);   //wait 1ms for respon command
+
+  mp3_set_volume(15); //set Volume module DFPlayer
+  delay(1000);
+  lcd.clear();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (insert) {
+    insert = false;
+    Serial.println("koin masuk");
+    saldo += 1000;
+    mp3_play (1);
+    delay(1000);
+  }
+  lcd.setCursor(0, 0);
+  lcd.print("Balance : " + (String)saldo+"        ");
+  if (saldo > 0) {
+    lcd.setCursor(0, 1);
+    lcd.print("Press button");
+  }
+
+  if (digitalRead(button1) == LOW) {
+    if (saldo >= harga1) {
+      saldo -= harga1;
+      ambil1();
+      delay(3000);
+      stopMotor1();
+    } else {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Sorry not enough");
+      lcd.setCursor(0, 1);
+      lcd.print("balance");
+      mp3_play (2);
+      delay(2000);
+    }
+  }
+  if (digitalRead(button2) == LOW) {
+    if (saldo >= harga2) {
+      saldo -= harga2;
+      ambil2();
+      delay(3000);
+      stopMotor2();
+    } else {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Sorry not enough");
+      lcd.setCursor(0, 1);
+      lcd.print("balance");
+      mp3_play (2);
+      delay(2000);
+    }
+  }
+  if (digitalRead(button3) == LOW) {
+    if (saldo >= harga3) {
+      saldo -= harga3;
+      ambil3();
+      delay(3000);
+      stopMotor3();
+    } else {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Sorry not enough");
+      lcd.setCursor(0, 1);
+      lcd.print("balance");
+      mp3_play (2);
+      delay(2000);
+    }
+  }
+}
+
+//interrupt
+void coinInterrupt() {
+  pulse++ ;
+  insert = true;
+}
+
+void ambil1() {
+  digitalWrite(motor1A, HIGH);
+  digitalWrite(motor1B, LOW);
+}
+
+void stopMotor1() {
+  digitalWrite(motor1A, LOW);
+  digitalWrite(motor1B, LOW);
+}
+
+void ambil2() {
+  digitalWrite(motor2A, HIGH);
+  digitalWrite(motor2B, LOW);
+}
+
+void stopMotor2() {
+  digitalWrite(motor2A, LOW);
+  digitalWrite(motor2B, LOW);
+}
+
+void ambil3() {
+  digitalWrite(motor3A, HIGH);
+  digitalWrite(motor3B, LOW);
+}
+
+void stopMotor3() {
+  digitalWrite(motor3A, LOW);
+  digitalWrite(motor3B, LOW);
+}
